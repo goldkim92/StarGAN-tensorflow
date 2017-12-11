@@ -35,3 +35,6 @@ def relu(x, name='relu'):
 
 def lrelu(x, leak=0.2, name='lrelu'):
     return tf.maximum(x, leak*x)
+
+def tanh(x):
+    return tf.nn.tanh(x)

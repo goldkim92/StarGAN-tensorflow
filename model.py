@@ -16,7 +16,8 @@ class stargan(object):
         __batch_size = 1
         __image_size = 128
         __image_channel = 3
-        __n_labels = 6
+        __nf= 64
+        __n_labels = 10
         __lambda_cls = 1
         __lambda_rec = 10
         __lr = 0.0001
@@ -32,6 +33,7 @@ class stargan(object):
         self.batch_size = __batch_size
         self.image_size = __image_size
         self.image_channel = __image_channel
+        self.nf = __nf
         self.n_labels = __n_labels
         self.lambda_cls = __lambda_cls
         self.lambda_rec = __lambda_rec
@@ -40,8 +42,8 @@ class stargan(object):
         self.continue_train = __continue_train
         
         # hyper-parameter for building the module
-        OPTIONS = namedtuple('OPTIONS', ['batch_size', 'image_size'])
-        self.options = OPTIONS(self.batch_size, self.image_size)
+        OPTIONS = namedtuple('OPTIONS', ['batch_size', 'image_size', 'nf', 'n_labels'])
+        self.options = OPTIONS(self.batch_size, self.image_size, self.nf, self.n_labels)
         
         self.build_model()
         self.saver = tf.train.Saver()
