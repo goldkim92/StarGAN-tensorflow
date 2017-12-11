@@ -1,13 +1,17 @@
 import os
+import numpy as np
 import tensorflow as tf
 from collections import namedtuple
 
 from module import generator, discriminator, sce_loss, recon_loss
+from util import load_data_list
 
 class stargan(object):
     def __init__(self,sess,args):
+        __data_dir = os.path.join('.','data','celebA','train')
         __log_dir = os.path.join('.','assets','log')
         __ckpt_dir = os.path.join('.','assets','checkpoint')
+        __epoch = 100
         __batch_size = 1
         __image_size = 128
         __image_channel = 3
@@ -18,9 +22,12 @@ class stargan(object):
         __beta1 = 0.5
         __continue_train = False
         
+        
         self.sess = sess
+        self.data_dir = __data_dir
         self.log_dir = __log_dir
         self.ckpt_dir = __ckpt_dir
+        self.epoch = __epoch
         self.batch_size = __batch_size
         self.image_size = __image_size
         self.image_channel = __image_channel
@@ -92,7 +99,8 @@ class stargan(object):
         # summary setting
         self.summary()
         # load train data
-        self.load_data()
+        dataA_list = load_data_list(self.data_dir)
+        dataB_list = dataA_list
         # variable initialize
         self.sess.run(tf.global_variables_initializer())
         # load or not checkpoint
@@ -101,9 +109,15 @@ class stargan(object):
         else:
             print(" [!] before training, no need to Load ")
         
+        batch_idxs = len(dataA_list) #182599
         #train
-        
-        
+        for epoch in range(self.epoch):
+            np.random.shuffle(dataA_list)
+            np.random.shuffle(dataB_list)
+            
+            for idx in tqdm(range(batch_idxs)):
+                
+            
         
     
     
@@ -116,9 +130,6 @@ class stargan(object):
         tf.summary.scalar('g_loss', self.g_loss)
         self.summary = tf.summary.merge_all()
        
-        
-    def load_data(self):
-        return;
     
     def checkpoint_load(self):
         print(" [*] Reading checkpoint...")

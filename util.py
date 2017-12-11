@@ -1,6 +1,14 @@
 #%% import
 import os
+from glob import glob
 from collections import namedtuple
+
+
+#%%
+def load_data_list(data_dir):
+    path = os.path.join(data_dir,'*')
+    file_list = glob(path)
+    return file_list
 
 #%% file and directory (csv txt file)
 def attr_extract():
@@ -22,10 +30,9 @@ def attr_extract():
         row = line.split('\n')[0].split()
         img_name = row.pop(0)
         row = ATTRS(*row)
-        attr[img_name] = row
+        attr[img_name] = row   
     
     file.close()
-    
     return attr
 
 
