@@ -27,3 +27,14 @@ def attr_extract():
     file.close()
     
     return attr
+
+
+Black Hair
+Blond Hair
+Brown Hair
+Gray Hair
+Male
+Young
+Mustache
+No_Beard
+Eyeglasses
