@@ -11,7 +11,7 @@ import subprocess
 from tqdm import tqdm
 from collections import OrderedDict
 
-def download_file_from_google_drive(id, destination):
+def download_file_from_google_drive(id, destination, attr=False):
     URL = "https://docs.google.com/uc?export=download"
     session = requests.Session()
 
@@ -22,7 +22,10 @@ def download_file_from_google_drive(id, destination):
         params = { 'id' : id, 'confirm' : token }
         response = session.get(URL, params=params, stream=True)
 
-    save_response_content(response, destination)    
+    if not attr:
+        save_response_content(response, destination)
+    else:
+        save_response_content_attr(response, destination)
 
 def get_confirm_token(response):
     for key, value in response.cookies.items():
@@ -38,6 +41,14 @@ def save_response_content(response, destination, chunk_size=32*1024):
             if chunk: # filter out keep-alive new chunks
                 f.write(chunk)
 
+def save_response_content_attr(response, destination):
+    CHUNK_SIZE = 32768
+
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+                
 def unzip(filepath):
     print("Extracting: " + filepath)
     base_path = os.path.dirname(filepath)
@@ -52,8 +63,6 @@ def download_celeb_a(base_path):
         print('[!] Found Celeb-A - skip')
         return
 
-    attr_filename, attr_drive_id = 'list_attr_celeba.txt','0B7EVK8r0v71pblRyaVFSWGxPY0U'
-    attr_save_path = os.path.join(data_path,attr_filename)
     filename, drive_id  = "img_align_celeba.zip", "0B7EVK8r0v71pZjFTYXZWM3FlRnM"
     save_path = os.path.join(base_path, filename)
 
@@ -61,11 +70,6 @@ def download_celeb_a(base_path):
         print('[*] {} already exists'.format(save_path))
     else:
         download_file_from_google_drive(drive_id, save_path)
-        
-#    if os.path.exists(attr_save_path):
-#        print('[*] {} already exists'.format(attr_save_path))
-#    else:
-#        download_file_from_google_drive(attr_drive_id, attr_save_path)
 
     zip_dir = ''
     with zipfile.ZipFile(save_path) as zf:
@@ -75,6 +79,11 @@ def download_celeb_a(base_path):
         os.mkdir(data_path)
     os.rename(os.path.join(base_path, "img_align_celeba"), images_path)
 #    os.remove()
+
+def download_celeba_attr(base_path):
+    file_id = '0B7EVK8r0v71pblRyaVFSWGxPY0U'
+    destination = os.path.join(base_path,'celebA','list_attr_celeba.txt')
+    download_file_from_google_drive(file_id, destination, attr=True)
 
 def prepare_data_dir(path = './data'):
     if not os.path.exists(path):
@@ -122,3 +131,4 @@ if __name__ == '__main__':
     prepare_data_dir()
     download_celeb_a(base_path)
     add_splits(base_path)
+    download_celeba_attr(base_path)

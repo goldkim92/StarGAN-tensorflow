@@ -1,3 +1,6 @@
 data/
 assets/
 __pycache__/
+.ipynb_checkpoints/
+
+index.html

@@ -11,50 +11,24 @@ from util import load_data_list, attr_extract, preprocess_attr, preprocess_image
 
 class stargan(object):
     def __init__(self,sess,args):
-        __data_dir = os.path.join('.','data','celebA')
-        __log_dir = os.path.join('.','assets','log')
-        __ckpt_dir = os.path.join('.','assets','checkpoint')
-        __sample_dir = os.path.join('.','assets','sample')
-        __epoch = 100
-        __batch_size = 1
-        __image_size = 64
-        __image_channel = 3
-        __nf= 64
-        __n_label = 10
-        __lambda_cls = 1
-        __lambda_rec = 10
-        __lr = 0.0001
-        __beta1 = 0.5
-        __continue_train = False
-        __snapshot = 1000
-        
-        
-        # make directory if not exist
-        try: os.makedirs(__log_dir)
-        except: pass
-        try: os.makedirs(__ckpt_dir)
-        except: pass
-        try: os.makedirs(__sample_dir)
-        except: pass
-
-        
+        #
         self.sess = sess
-        self.data_dir = __data_dir
-        self.log_dir = __log_dir
-        self.ckpt_dir = __ckpt_dir
-        self.sample_dir = __sample_dir
-        self.epoch = __epoch
-        self.batch_size = __batch_size
-        self.image_size = __image_size
-        self.image_channel = __image_channel
-        self.nf = __nf
-        self.n_label = __n_label
-        self.lambda_cls = __lambda_cls
-        self.lambda_rec = __lambda_rec
-        self.lr = __lr
-        self.beta1 = __beta1
-        self.continue_train = __continue_train
-        self.snapshot = __snapshot
+        self.data_dir = args.data_dir # ./data/celebA
+        self.log_dir = args.log_dir # ./assets/log
+        self.ckpt_dir = args.ckpt_dir # ./assets/checkpoint
+        self.sample_dir = args.sample_dir # ./assets/sample
+        self.epoch = args.epoch # 100
+        self.batch_size = args.batch_size # 16
+        self.image_size = args.image_size # 64
+        self.image_channel = args.image_channel # 3
+        self.nf = args.nf # 64
+        self.n_label = args.n_label # 10
+        self.lambda_cls = args.lambda_cls # 1
+        self.lambda_rec = args.lambda_rec # 10
+        self.lr = args.lr # 0.0001
+        self.beta1 = args.beta1 # 0.5
+        self.continue_train = args.continue_train # False
+        self.snapshot = args.snapshot # 100
         
         # hyper-parameter for building the module
         OPTIONS = namedtuple('OPTIONS', ['batch_size', 'image_size', 'nf', 'n_label'])
@@ -161,8 +135,8 @@ class stargan(object):
                 _, g_loss, g_summary = self.sess.run([self.g_optim, self.g_loss, self.g_sum], feed_dict = feed)
                 
                 # update D network
-                feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB) }
-                _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum])
+#                feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB) }
+                _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum], feed_dict = feed)
                 
                 # summary
                 self.writer.add_summary(g_summary, count)
@@ -213,7 +187,7 @@ class stargan(object):
     def checkpoint_save(self, step):
         model_name = "stargan.model"
         self.saver.save(self.sess,
-                        os.path.join(self.checkpoint_dir, model_name),
+                        os.path.join(self.ckpt_dir, model_name),
                         global_step=step)
         
         
