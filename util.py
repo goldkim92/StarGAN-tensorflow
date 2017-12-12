@@ -86,3 +86,27 @@ def inverse_image(img):
     return img.astype(np.uint8)
 
 
+def save_images(realA, realB, fake_B, image_size, sample_file, num=10):
+    # [5,6] with the seequnce of (realA, realB, fakeB), total 10 set save
+    img = np.concatenate((realA[:5,:,:,:],realB[:5,:,:,:],fake_B[:5,:,:,:],
+                          realA[5:,:,:,:],realB[5:,:,:,:],fake_B[5:,:,:,:]), axis=0)
+    img = make3d(img, image_size, row=5, col=6)
+    img = inverse_image(img)
+    scm.imsave(sample_file, img)
+
+
+def make3d(img, image_size, row, col):
+    # img.shape = [row*col, h, w, c]
+    # final: [row*h, col*w, c]
+    img = np.reshape(img, [col,row,image_size,image_size,3]) # [col, row, h, w, c]
+    img = unstack(img, axis=0) # col * [row, h, w, c]
+    img = np.concatenate(img, axis=2) # [row, h, col*w, c]
+    img = unstack(img, axis=0) # row * [h, col*w, c]
+    img = np.concatenate(img, axis=0) # [row*h, col*w, c]
+    return img
+
+
+def unstack(img, axis):
+    d =img.shape[axis]
+    arr = [np.squeeze(a,axis=axis) for a in np.split(img, d, axis=axis)]
+    return arr
