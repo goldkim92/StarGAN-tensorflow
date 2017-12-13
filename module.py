@@ -53,9 +53,15 @@ def discriminator(images, options, reuse=False, name='disc'):
         cls = x[:,1:]
         return src, cls
 
-def wgan_loss(logits, labels):
-    return;    
-
+def wgan_gp_loss(real_img, fake_img, options):
+    alpha = tf.random_uniform([options.batch_size,1,1,1], minval=0., maxval=1.)
+    hat_img = alpha * real_img + (1-alpha) * fake_img
+    gradients = tf.gradients(discriminator(hat_img, options, reuse=True, name='disc')[0], xs=[hat_img])[0]
+    slopes = tf.square(tf.reduce_sum(tf.square(gradients), axis=1))
+    gradient_penalty = tf.reduce_mean((slopes - 1.)**2)
+    
+    return options.lambda_gp * gradient_penalty
+        
 def gan_loss(logits, labels):
     return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits,labels=labels))
 

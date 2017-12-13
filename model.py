@@ -6,7 +6,7 @@ from tqdm import tqdm
 from glob import glob
 import random
 
-from module import generator, discriminator, cls_loss, recon_loss, gan_loss, wgan_loss
+from module import generator, discriminator, cls_loss, recon_loss, gan_loss, wgan_gp_loss
 from util import load_data_list, attr_extract, preprocess_attr, preprocess_image, preprocess_input, save_images
 
 class stargan(object):
@@ -23,22 +23,18 @@ class stargan(object):
         self.image_channel = args.image_channel # 3
         self.nf = args.nf # 64
         self.n_label = args.n_label # 10
+        self.lambda_gp = args.lambda_gp
         self.lambda_cls = args.lambda_cls # 1
         self.lambda_rec = args.lambda_rec # 10
         self.lr = args.lr # 0.0001
         self.beta1 = args.beta1 # 0.5
         self.continue_train = args.continue_train # False
         self.snapshot = args.snapshot # 100
+        self.adv_type = args.adv_type
         
         # hyper-parameter for building the module
-        OPTIONS = namedtuple('OPTIONS', ['batch_size', 'image_size', 'nf', 'n_label'])
-        self.options = OPTIONS(self.batch_size, self.image_size, self.nf, self.n_label)
-        
-        # select adversarial loss function : GAN vs WGAN
-        if args.adv_loss == 'WGAN' :
-            self.adv_loss = wgan_loss 
-        else : 
-            self.adv_loss = gan_loss
+        OPTIONS = namedtuple('OPTIONS', ['batch_size', 'image_size', 'nf', 'n_label', 'lambda_gp'])
+        self.options = OPTIONS(self.batch_size, self.image_size, self.nf, self.n_label, self.lambda_gp)
         
         # build model & make checkpoint saver 
         self.build_model()
@@ -47,16 +43,16 @@ class stargan(object):
     def build_model(self):
         # placeholder
         # input_image: A, target_image: B
-        self.real_A = tf.placeholder(tf.float32, 
-                                           [None, self.image_size, self.image_size, self.image_channel + self.n_label],
-                                           name = 'input_images')
-        self.real_B = tf.placeholder(tf.float32, 
-                                           [None, self.image_size, self.image_size, self.image_channel + self.n_label],
-                                           name = 'target_images')
-        self.attr_B = tf.placeholder(tf.float32, [None, self.n_label], name='target_attr')
+        self.real_A = tf.placeholder(tf.float32,
+                                     [self.batch_size, self.image_size, self.image_size, self.image_channel + self.n_label],
+                                     name = 'input_images')
+        self.real_B = tf.placeholder(tf.float32,
+                                     [self.batch_size, self.image_size, self.image_size, self.image_channel + self.n_label],
+                                     name = 'target_images')
+        self.attr_B = tf.placeholder(tf.float32, [self.batch_size, self.n_label], name='target_attr')
         
         self.fake_B_sample = tf.placeholder(tf.float32,
-                                            [None, self.image_size, self.image_size, self.image_channel],
+                                            [self.batch_size, self.image_size, self.image_size, self.image_channel],
                                             name = 'fake_images_sample') # use when updating discriminator
         
         # generate image
@@ -73,22 +69,30 @@ class stargan(object):
         # loss
         ## discriminator loss ##
         ### adversarial loss
-        self.d_real_adv_loss = self.adv_loss(self.src_real_B, tf.ones_like(self.src_real_B))
-        self.d_fake_adv_loss = self.adv_loss(self.d_src_fake_B, tf.zeros_like(self.d_src_fake_B))
+        if self.adv_type == 'WGAN':
+            gp_loss = wgan_gp_loss(self.real_B[:,:,:,:self.image_channel], self.fake_B_sample, self.options)
+            self.d_adv_loss = tf.reduce_mean(self.d_src_fake_B) - tf.reduce_mean(self.src_real_B) + gp_loss
+        else: # 'GAN'
+            d_real_adv_loss = gan_loss(self.src_real_B, tf.ones_like(self.src_real_B))
+            d_fake_adv_loss = gan_loss(self.d_src_fake_B, tf.zeros_like(self.d_src_fake_B))
+            self.d_adv_loss = d_real_adv_loss + d_fake_adv_loss
         ### domain classification loss
         self.d_real_cls_loss = cls_loss(self.cls_real_B, self.attr_B)
         ### disc loss function
-        self.d_loss = self.d_real_adv_loss + self.d_fake_adv_loss + self.lambda_cls * self.d_real_cls_loss
+        self.d_loss = self.d_adv_loss + self.lambda_cls * self.d_real_cls_loss
         
         ## generator loss ##
         ### adv loss
-        self.g_fake_adv_loss = self.adv_loss(self.g_src_fake_B, tf.ones_like(self.g_src_fake_B))
+        if self.adv_type == 'WGAN':
+            self.g_adv_loss = -tf.reduce_mean(self.fake_B)
+        else: # 'GAN'
+            self.g_adv_loss = gan_loss(self.g_src_fake_B, tf.ones_like(self.g_src_fake_B))
         ### domain classificatioin loss
         self.g_fake_cls_loss = cls_loss(self.g_cls_fake_B, self.attr_B)
         ### reconstruction loss
         self.g_recon_loss = recon_loss(self.real_A[:,:,:,:self.image_channel], self.fake_A)
         ### gen loss function
-        self.g_loss = self.g_fake_adv_loss + self.lambda_cls * self.g_fake_cls_loss + self.lambda_rec * self.g_recon_loss
+        self.g_loss = self.g_adv_loss + self.lambda_cls * self.g_fake_cls_loss + self.lambda_rec * self.g_recon_loss
         
         # trainable variables
         t_vars = tf.trainable_variables()
@@ -141,7 +145,8 @@ class stargan(object):
                 
                 # updatae G network
                 feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB) }
-                fake_B, _, g_loss, g_summary = self.sess.run([self.fake_B, self.g_optim, self.g_loss, self.g_sum], feed_dict = feed)
+                fake_B, _, g_loss, g_summary = self.sess.run([self.fake_B, self.g_optim, self.g_loss, self.g_sum],
+                                                             feed_dict = feed)
                 
                 # update D network
                 feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB) }
@@ -167,17 +172,16 @@ class stargan(object):
         self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
         
         # session : discriminator
-        sum_d_1 = tf.summary.scalar('d_real_adv_loss', self.d_real_adv_loss)
-        sum_d_2 = tf.summary.scalar('d_fake_adv_loss', self.d_fake_adv_loss)
-        sum_d_3 = tf.summary.scalar('d_real_cls_loss', self.d_real_cls_loss)
-        sum_d_4 = tf.summary.scalar('d_loss', self.d_loss)
-        self.d_sum = tf.summary.merge([sum_d_1, sum_d_2, sum_d_3, sum_d_4])
+        sum_d_1 = tf.summary.scalar('disc/adv_loss', self.d_adv_loss)
+        sum_d_2 = tf.summary.scalar('disc/real_cls_loss', self.d_real_cls_loss)
+        sum_d_3 = tf.summary.scalar('disc/d_loss', self.d_loss)
+        self.d_sum = tf.summary.merge([sum_d_1, sum_d_2, sum_d_3])
         
         # session : generator
-        sum_g_1 = tf.summary.scalar('g_fake_adv_loss', self.g_fake_adv_loss)
-        sum_g_2 = tf.summary.scalar('g_fake_cls_loss', self.g_fake_cls_loss)
-        sum_g_3 = tf.summary.scalar('g_recon_loss', self.g_recon_loss)
-        sum_g_4 = tf.summary.scalar('g_loss', self.g_loss)
+        sum_g_1 = tf.summary.scalar('gen/adv_loss', self.g_adv_loss)
+        sum_g_2 = tf.summary.scalar('gen/fake_cls_loss', self.g_fake_cls_loss)
+        sum_g_3 = tf.summary.scalar('gen/recon_loss', self.g_recon_loss)
+        sum_g_4 = tf.summary.scalar('gen/g_loss', self.g_loss)
         self.g_sum = tf.summary.merge([sum_g_1, sum_g_2, sum_g_3, sum_g_4])
        
     
