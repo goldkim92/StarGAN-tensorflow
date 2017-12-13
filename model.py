@@ -6,7 +6,7 @@ from tqdm import tqdm
 from glob import glob
 import random
 
-from module import generator, discriminator, sce_loss, recon_loss
+from module import generator, discriminator, cls_loss, recon_loss, gan_loss, wgan_loss
 from util import load_data_list, attr_extract, preprocess_attr, preprocess_image, preprocess_input, save_images
 
 class stargan(object):
@@ -34,6 +34,13 @@ class stargan(object):
         OPTIONS = namedtuple('OPTIONS', ['batch_size', 'image_size', 'nf', 'n_label'])
         self.options = OPTIONS(self.batch_size, self.image_size, self.nf, self.n_label)
         
+        # select adversarial loss function : GAN vs WGAN
+        if args.adv_loss == 'WGAN' :
+            self.adv_loss = wgan_loss 
+        else : 
+            self.adv_loss = gan_loss
+        
+        # build model & make checkpoint saver 
         self.build_model()
         self.saver = tf.train.Saver()
         
@@ -66,18 +73,18 @@ class stargan(object):
         # loss
         ## discriminator loss ##
         ### adversarial loss
-        self.d_real_adv_loss = sce_loss(self.src_real_B, tf.ones_like(self.src_real_B))
-        self.d_fake_adv_loss = sce_loss(self.d_src_fake_B, tf.zeros_like(self.d_src_fake_B))
+        self.d_real_adv_loss = self.adv_loss(self.src_real_B, tf.ones_like(self.src_real_B))
+        self.d_fake_adv_loss = self.adv_loss(self.d_src_fake_B, tf.zeros_like(self.d_src_fake_B))
         ### domain classification loss
-        self.d_real_cls_loss = sce_loss(self.cls_real_B, self.attr_B)
+        self.d_real_cls_loss = cls_loss(self.cls_real_B, self.attr_B)
         ### disc loss function
         self.d_loss = self.d_real_adv_loss + self.d_fake_adv_loss + self.lambda_cls * self.d_real_cls_loss
         
         ## generator loss ##
         ### adv loss
-        self.g_fake_adv_loss = sce_loss(self.g_src_fake_B, tf.ones_like(self.g_src_fake_B))
+        self.g_fake_adv_loss = self.adv_loss(self.g_src_fake_B, tf.ones_like(self.g_src_fake_B))
         ### domain classificatioin loss
-        self.g_fake_cls_loss = sce_loss(self.g_cls_fake_B, self.attr_B)
+        self.g_fake_cls_loss = cls_loss(self.g_cls_fake_B, self.attr_B)
         ### reconstruction loss
         self.g_recon_loss = recon_loss(self.real_A[:,:,:,:self.image_channel], self.fake_A)
         ### gen loss function

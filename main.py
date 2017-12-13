@@ -30,6 +30,7 @@ parser.add_argument('--lr', type=float, default=0.0001) # learning_rate
 parser.add_argument('--beta1', type=float, default=0.5)
 parser.add_argument('--continue_train', type=bool, default=False)
 parser.add_argument('--snapshot', type=int, default=100)
+parser.add_argument('--adv_loss', type=str, default='GAN', help='GAN or WGAN')
 
 args = parser.parse_args()
 

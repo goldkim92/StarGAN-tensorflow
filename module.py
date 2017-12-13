@@ -53,7 +53,13 @@ def discriminator(images, options, reuse=False, name='disc'):
         cls = x[:,1:]
         return src, cls
 
-def sce_loss(logits, labels):
+def wgan_loss(logits, labels):
+    return;    
+
+def gan_loss(logits, labels):
+    return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits,labels=labels))
+
+def cls_loss(logits, labels):
     return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits,labels=labels))
 
 def recon_loss(image1, image2):
