@@ -44,16 +44,18 @@ class stargan(object):
         # placeholder
         # input_image: A, target_image: B
         self.real_A = tf.placeholder(tf.float32,
-                                     [self.batch_size, self.image_size, self.image_size, self.image_channel + self.n_label],
-                                     name = 'input_images')
+                                     [None, self.image_size, self.image_size, self.image_channel + self.n_label],
+                                     name='input_images')
         self.real_B = tf.placeholder(tf.float32,
-                                     [self.batch_size, self.image_size, self.image_size, self.image_channel + self.n_label],
-                                     name = 'target_images')
-        self.attr_B = tf.placeholder(tf.float32, [self.batch_size, self.n_label], name='target_attr')
+                                     [None, self.image_size, self.image_size, self.image_channel + self.n_label],
+                                     name='target_images')
+        self.attr_B = tf.placeholder(tf.float32, [None, self.n_label], name='target_attr')
         
         self.fake_B_sample = tf.placeholder(tf.float32,
-                                            [self.batch_size, self.image_size, self.image_size, self.image_channel],
-                                            name = 'fake_images_sample') # use when updating discriminator
+                                            [None, self.image_size, self.image_size, self.image_channel],
+                                            name='fake_images_sample') # use when updating discriminator
+        
+        self.epsilon = tf.placeholder(tf.float32, [None,1,1,1], name='gp_random_num')
         
         # generate image
         self.fake_B = generator(self.real_A, self.options, False, name='gen')
@@ -70,7 +72,7 @@ class stargan(object):
         ## discriminator loss ##
         ### adversarial loss
         if self.adv_type == 'WGAN':
-            gp_loss = wgan_gp_loss(self.real_B[:,:,:,:self.image_channel], self.fake_B_sample, self.options)
+            gp_loss = wgan_gp_loss(self.real_B[:,:,:,:self.image_channel], self.fake_B_sample, self.options, self.epsilon)
             self.d_adv_loss = tf.reduce_mean(self.d_src_fake_B) - tf.reduce_mean(self.src_real_B) + gp_loss
         else: # 'GAN'
             d_real_adv_loss = gan_loss(self.src_real_B, tf.ones_like(self.src_real_B))
@@ -149,7 +151,8 @@ class stargan(object):
                                                              feed_dict = feed)
                 
                 # update D network
-                feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB) }
+                epsilon = np.random.rand(self.batch_size,1,1,1)
+                feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB), self.epsilon: epsilon }
                 _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum], feed_dict = feed)
                 
                 # summary
@@ -219,7 +222,7 @@ class stargan(object):
         dataA, dataB = preprocess_input(imgA, imgB, attrA, attrB, self.image_size, self.n_label)
                         
         # generate fakeB
-        feed = { self.real_A: dataA, self.real_B: dataB }
+        feed = { self.real_A: dataA }
         fake_B = self.sess.run(self.fake_B, feed_dict = feed)
         
         # save samples

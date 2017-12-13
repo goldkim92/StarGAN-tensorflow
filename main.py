@@ -18,7 +18,7 @@ parser.add_argument('--data_dir',       type=str,   default=os.path.join('.','da
 parser.add_argument('--log_dir',        type=str,   default=os.path.join('.','assets','log'))
 parser.add_argument('--ckpt_dir',       type=str,   default=os.path.join('.','assets','checkpoint'))
 parser.add_argument('--sample_dir',     type=str,   default=os.path.join('.','assets','sample'))
-parser.add_argument('--epoch',          type=int,   default=100)
+parser.add_argument('--epoch',          type=int,   default=20)
 parser.add_argument('--batch_size',     type=int,   default=16)
 parser.add_argument('--image_size',     type=int,   default=64)
 parser.add_argument('--image_channel',  type=int,   default=3)
@@ -31,7 +31,7 @@ parser.add_argument('--lr',             type=float, default=0.0001) # learning_r
 parser.add_argument('--beta1',          type=float, default=0.5)
 parser.add_argument('--continue_train', type=bool,  default=False)
 parser.add_argument('--snapshot',       type=int,   default=100) # number of iterations to save files
-parser.add_argument('--adv_type',       type=str,   default='GAN', help='GAN or WGAN')
+parser.add_argument('--adv_type',       type=str,   default='WGAN', help='GAN or WGAN')
 
 args = parser.parse_args()
 
