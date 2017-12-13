@@ -47,9 +47,10 @@ class stargan(object):
                                            [None, self.image_size, self.image_size, self.image_channel + self.n_label],
                                            name = 'target_images')
         self.attr_B = tf.placeholder(tf.float32, [None, self.n_label], name='target_attr')
-#        self.fake_B_sample = tf.placeholder(tf.float32,
-#                                            [None, self.image_size, self.image_size, self.image_channel],
-#                                            name = 'fake_images_sample')
+        
+        self.fake_B_sample = tf.placeholder(tf.float32,
+                                            [None, self.image_size, self.image_size, self.image_channel],
+                                            name = 'fake_images_sample') # use when updating discriminator
         
         # generate image
         self.fake_B = generator(self.real_A, self.options, False, name='gen')
@@ -59,13 +60,14 @@ class stargan(object):
         # src: real or fake, cls: domain classification 
         self.src_real_B, self.cls_real_B = discriminator(self.real_B[:,:,:,:self.image_channel], 
                                                          self.options, False, name='disc')
-        self.src_fake_B, self.cls_fake_B = discriminator(self.fake_B, self.options, True, name='disc')
+        self.g_src_fake_B, self.g_cls_fake_B = discriminator(self.fake_B, self.options, True, name='disc') # use when updating generator
+        self.d_src_fake_B, self.d_cls_fake_B = discriminator(self.fake_B_sample, self.options, True, name='disc') # use when updating discriminator
         
         # loss
         ## discriminator loss ##
         ### adversarial loss
         self.d_real_adv_loss = sce_loss(self.src_real_B, tf.ones_like(self.src_real_B))
-        self.d_fake_adv_loss = sce_loss(self.src_fake_B, tf.zeros_like(self.src_fake_B))
+        self.d_fake_adv_loss = sce_loss(self.d_src_fake_B, tf.zeros_like(self.d_src_fake_B))
         ### domain classification loss
         self.d_real_cls_loss = sce_loss(self.cls_real_B, self.attr_B)
         ### disc loss function
@@ -73,9 +75,9 @@ class stargan(object):
         
         ## generator loss ##
         ### adv loss
-        self.g_fake_adv_loss = sce_loss(self.src_fake_B, tf.ones_like(self.src_fake_B))
+        self.g_fake_adv_loss = sce_loss(self.g_src_fake_B, tf.ones_like(self.g_src_fake_B))
         ### domain classificatioin loss
-        self.g_fake_cls_loss = sce_loss(self.cls_fake_B, self.attr_B)
+        self.g_fake_cls_loss = sce_loss(self.g_cls_fake_B, self.attr_B)
         ### reconstruction loss
         self.g_recon_loss = recon_loss(self.real_A[:,:,:,:self.image_channel], self.fake_A)
         ### gen loss function
@@ -132,10 +134,10 @@ class stargan(object):
                 
                 # updatae G network
                 feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB) }
-                _, g_loss, g_summary = self.sess.run([self.g_optim, self.g_loss, self.g_sum], feed_dict = feed)
+                fake_B, _, g_loss, g_summary = self.sess.run([self.fake_B, self.g_optim, self.g_loss, self.g_sum], feed_dict = feed)
                 
                 # update D network
-#                feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB) }
+                feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB) }
                 _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum], feed_dict = feed)
                 
                 # summary
@@ -194,7 +196,7 @@ class stargan(object):
     def sample_save(self, step):
         test_files = glob(os.path.join(self.data_dir, 'test', '*'))
         
-        # [5,6] with the seequnce of (realA, realB, fakeB), total 10 set save
+        # [5,6] with the seequnce of (realA, realB, fakeB), totally 10 set save
         testA_list = random.sample(test_files, 10)
         testB_list = random.sample(test_files, 10)
         attrA_list = [self.attr_list[os.path.basename(val)] for val in testA_list]
