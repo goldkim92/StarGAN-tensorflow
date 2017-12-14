@@ -86,7 +86,7 @@ class stargan(object):
         ## generator loss ##
         ### adv loss
         if self.adv_type == 'WGAN':
-            self.g_adv_loss = -tf.reduce_mean(self.fake_B)
+            self.g_adv_loss = -tf.reduce_mean(self.g_src_fake_B)
         else: # 'GAN'
             self.g_adv_loss = gan_loss(self.g_src_fake_B, tf.ones_like(self.g_src_fake_B))
         ### domain classificatioin loss
