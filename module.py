@@ -48,7 +48,7 @@ def discriminator(images, options, reuse=False, name='disc'):
         
         # output layer
         x = conv2d(x, 1+options.n_label, ks=1, s=1, name='disc_conv7') # (batch, h/64, w/64, 1+n)
-        x = tf.reshape(x,[-1,1+options.n_label])  # (batch, 1+n)
+        x = tf.reshape(tf.reduce_mean(x,axis=[1,2]),[-1,1+options.n_label])  # (batch, 1+n)
         src = x[:,0]
         cls = x[:,1:]
         return src, cls

@@ -36,8 +36,8 @@ def attr_extract(data_dir):
 
 
 def preprocess_attr(attr_names, attrA_list, attrB_list):
-    attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair','Gray_Hair','Male',
-                 'Young','Mustache','No_Beard','Eyeglasses','Wearing_Hat']
+    attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male',
+                 'Young','Mustache','Pale_Skin']
     attrA = []
     attrB = []    
 
