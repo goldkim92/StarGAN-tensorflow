@@ -35,9 +35,8 @@ def attr_extract(data_dir):
     return attr_names, attr_list
 
 
-def preprocess_attr(attr_names, attrA_list, attrB_list):
-    attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male',
-                 'Young','Mustache','Pale_Skin']
+def preprocess_attr(attr_names, attrA_list, attrB_list, attr_keys):
+#    attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male', 'Young','Mustache','Pale_Skin']
     attrA = []
     attrB = []    
 
@@ -88,9 +87,14 @@ def inverse_image(img):
 
 def save_images(realA, realB, fake_B, image_size, sample_file, num=10):
     # [5,6] with the seequnce of (realA, realB, fakeB), total 10 set save
-    img = np.concatenate((realA[:5,:,:,:],realB[:5,:,:,:],fake_B[:5,:,:,:],
+    if np.array_equal(realA, realB): # for test
+        img = np.concatenate((realA[:5,:,:,:],fake_B[:5,:,:,:],
+                          realA[5:,:,:,:],fake_B[5:,:,:,:]), axis=0)
+        img = make3d(img, image_size, row=5, col=4)
+    else: # for sample while training
+        img = np.concatenate((realA[:5,:,:,:],realB[:5,:,:,:],fake_B[:5,:,:,:],
                           realA[5:,:,:,:],realB[5:,:,:,:],fake_B[5:,:,:,:]), axis=0)
-    img = make3d(img, image_size, row=5, col=6)
+        img = make3d(img, image_size, row=5, col=6)
     img = inverse_image(img)
     scm.imsave(sample_file, img)
 

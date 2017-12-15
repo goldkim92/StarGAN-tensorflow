@@ -13,10 +13,12 @@ class stargan(object):
     def __init__(self,sess,args):
         #
         self.sess = sess
+        self.phase = self.phase # train or test
         self.data_dir = args.data_dir # ./data/celebA
         self.log_dir = args.log_dir # ./assets/log
         self.ckpt_dir = args.ckpt_dir # ./assets/checkpoint
         self.sample_dir = args.sample_dir # ./assets/sample
+        self.test_dir = args.test_dir # ./assets/test
         self.epoch = args.epoch # 100
         self.batch_size = args.batch_size # 16
         self.image_size = args.image_size # 64
@@ -30,7 +32,17 @@ class stargan(object):
         self.beta1 = args.beta1 # 0.5
         self.continue_train = args.continue_train # False
         self.snapshot = args.snapshot # 100
-        self.adv_type = args.adv_type
+        self.adv_type = args.adv_type # WGAN or GAN
+        self.binary_attrs = args.binary_attrs
+        
+        self.attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male', 'Young','Mustache','Pale_Skin']
+#        avaiable attibutes
+#        ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips',
+#         'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair', 'Bushy_Eyebrows', 'Chubby',
+#         'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup', 'High_Cheekbones', 'Male',
+#         'Mouth_Slightly_Open', 'Mustache', 'Narrow_Eyes', 'No_Beard', 'Oval_Face', 'Pale_Skin', 'Pointy_Nose',
+#         'Receding_Hairline', 'Rosy_Cheeks', 'Sideburns', 'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings',
+#         'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie', 'Young']
         
         # hyper-parameter for building the module
         OPTIONS = namedtuple('OPTIONS', ['batch_size', 'image_size', 'nf', 'n_label', 'lambda_gp'])
@@ -141,7 +153,7 @@ class stargan(object):
                 attrB_list = [self.attr_list[os.path.basename(val)] for val in dataB_list]
                 
                 # get batch images and labels
-                attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list)
+                attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list, self.attr_keys)
                 imgA, imgB = preprocess_image(dataA_list, dataB_list, self.image_size)
                 dataA, dataB = preprocess_input(imgA, imgB, attrA, attrB, self.image_size, self.n_label)
                 
@@ -168,8 +180,42 @@ class stargan(object):
                     
                     # save samples (from test dataset)
                     self.sample_save(count)
+        
+        
+    def test(self):
+        # check if attribute available
+        if not len(self.binary_attrs) == len(self.n_label):
+            print ("binary_attr length is wrong! The length should be {}".format(self.n_label))
+            return;
+        
+        # variable initialize
+        self.sess.run(tf.global_variables_initializer())
+        
+        # load or not checkpoint
+        if self.phase=='test' and self.checkpoint_load():
+            print(" [*] before training, Load SUCCESS ")
+        else:
+            print(" [!] before training, no need to Load ")
             
-   
+        # [5,6] with the seequnce of (realA, realB, fakeB), totally 10 set save
+        test_files = glob(os.path.join(self.data_dir, 'test', '*'))
+        testA_list = random.sample(test_files, 10)
+        
+        # get batch images and labels
+#        self.attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male', 'Young','Mustache','Pale_Skin']
+        attrA, = [float(i) for i in list(self.binary_attrs)]
+        imgA, _ = preprocess_image(testA_list, testA_list, self.image_size)
+        dataA, _ = preprocess_input(imgA, imgA, attrA, attrA, self.image_size, self.n_label)
+                        
+        # generate fakeB
+        feed = { self.real_A: dataA }
+        fake_B = self.sess.run(self.fake_B, feed_dict = feed)
+        
+        # save samples
+        test_file = os.path.join(self.test_dir, 'test.jpg')
+        save_images(imgA, imgA, fake_B, self.image_size, test_file, num=10)
+        
+        
     def summary(self):
         # summary writer
         self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
@@ -217,7 +263,7 @@ class stargan(object):
         attrB_list = [self.attr_list[os.path.basename(val)] for val in testB_list]
         
         # get batch images and labels
-        attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list)
+        attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list, self.attr_keys)
         imgA, imgB = preprocess_image(testA_list, testB_list, self.image_size)
         dataA, dataB = preprocess_input(imgA, imgB, attrA, attrB, self.image_size, self.n_label)
                         

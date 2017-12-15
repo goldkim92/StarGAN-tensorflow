@@ -13,11 +13,13 @@ from model import stargan
 
 # argument parser
 parser = argparse.ArgumentParser(description='')
+parser.add_argument('--phase',          type=str,   default='train',    help='train or test')
 parser.add_argument('--gpu_number',     type=str,   default='0')
 parser.add_argument('--data_dir',       type=str,   default=os.path.join('.','data','celebA'))
 parser.add_argument('--log_dir',        type=str,   default='log') # in assets/ directory
 parser.add_argument('--ckpt_dir',       type=str,   default='checkpoint') # in assets/ directory
 parser.add_argument('--sample_dir',     type=str,   default='sample') # in assets/ directory
+parser.add_argument('--test_dir',       type=str,   default='test') # in assets/ directory
 parser.add_argument('--epoch',          type=int,   default=20)
 parser.add_argument('--batch_size',     type=int,   default=16)
 parser.add_argument('--image_size',     type=int,   default=64)
@@ -31,7 +33,8 @@ parser.add_argument('--lr',             type=float, default=0.0001) # learning_r
 parser.add_argument('--beta1',          type=float, default=0.5)
 parser.add_argument('--continue_train', type=bool,  default=False)
 parser.add_argument('--snapshot',       type=int,   default=500) # number of iterations to save files
-parser.add_argument('--adv_type',       type=str,   default='WGAN', help='GAN or WGAN')
+parser.add_argument('--adv_type',       type=str,   default='WGAN',     help='GAN or WGAN')
+parser.add_argument('--binary_attrs',   type=str,   default='0000000')
 
 args = parser.parse_args()
 
@@ -45,6 +48,7 @@ def main(_):
     args.log_dir = os.path.join(assets_dir, args.log_dir)
     args.ckpt_dir = os.path.join(assets_dir, args.ckpt_dir)
     args.sample_dir = os.path.join(assets_dir, args.sample_dir)
+    args.test_dir = os.path.join(assets_dir, args.test_dir)
     
     # make directory if not exist
     try: os.makedirs(args.log_dir)
@@ -53,14 +57,15 @@ def main(_):
     except: pass
     try: os.makedirs(args.sample_dir)
     except: pass
+    try: os.makedirs(args.test_dir)
+    except: pass
 
     # run session
     tfconfig = tf.ConfigProto()
     tfconfig.gpu_options.allow_growth = True
     with tf.Session(config=tfconfig) as sess:
         model = stargan(sess,args)
-        model.train()
-#        if args.phase == 'train' else model.test()
+        model.train() if args.phase == 'train' else model.test()
 
 # run main function
 if __name__ == '__main__':
