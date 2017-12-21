@@ -25,7 +25,7 @@ $ python main.py --phase=test --image_size=64 --binary_attrs=1001110
 ```
 Bianry attributes are now set up with the following sequence:
 ```
-'Black_Hair','Blond_Hair','Brown_Hair', 'Male', 'Young','Mustache','Pale_Skin'
+'Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Male', 'Young', 'Mustache', 'Pale_Skin'
 ```
 All the available attributes are:
 ```
