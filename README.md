@@ -2,13 +2,14 @@
 
 Tensorflow implementation of [StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation](https://arxiv.org/abs/1711.09020) <br>
 The author's torch code can be found [here](https://github.com/yunjey/StarGAN)
+<br><br>
 
-# Prerequisites
+## Prerequisites
 * Python 3.5
 * Tensorflow 1.3.0
 * Scipy
 
-# Usage
+## Usage
 So far I'm only using celebA datasets
 First, download dataset with:
 ```
@@ -41,7 +42,7 @@ if you change the attribute set, you should also change the n_label argument. fo
 $ python main.py --phase=train --n_label=10
 ```
 
-# Result
+## Result
 
-#Training details
+## Training details
 Details of the loss of Discriminator and Generator
