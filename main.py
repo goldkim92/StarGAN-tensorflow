@@ -35,6 +35,7 @@ parser.add_argument('--continue_train', type=bool,  default=False)
 parser.add_argument('--snapshot',       type=int,   default=500) # number of iterations to save files
 parser.add_argument('--adv_type',       type=str,   default='WGAN',     help='GAN or WGAN')
 parser.add_argument('--binary_attrs',   type=str,   default='0000000')
+# self.attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male', 'Young','Mustache','Pale_Skin']
 
 args = parser.parse_args()
 
@@ -44,7 +45,7 @@ def main(_):
     os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu_number
     tf.reset_default_graph()
     
-    assets_dir = os.path.join('.','assets','{}_label{}'.format(args.adv_type, args.n_label))
+    assets_dir = os.path.join('.','assets','{}_label{}_img{}'.format(args.adv_type, args.n_label, args.image_size))
     args.log_dir = os.path.join(assets_dir, args.log_dir)
     args.ckpt_dir = os.path.join(assets_dir, args.ckpt_dir)
     args.sample_dir = os.path.join(assets_dir, args.sample_dir)

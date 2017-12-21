@@ -13,7 +13,7 @@ class stargan(object):
     def __init__(self,sess,args):
         #
         self.sess = sess
-        self.phase = self.phase # train or test
+        self.phase = args.phase # train or test
         self.data_dir = args.data_dir # ./data/celebA
         self.log_dir = args.log_dir # ./assets/log
         self.ckpt_dir = args.ckpt_dir # ./assets/checkpoint
