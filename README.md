@@ -37,7 +37,7 @@ All the available attributes are:
 'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace', 'Wearing_Necktie', 'Young'
 ```
 which are the attributes provided in celebA dataset. you can change the attribute set in model.py <br>
-if you change the attribute set, you should also change the n_label argument. for example:
+if you change the attribute set, you should also change the `n_label` argument. for example:
 ```
 $ python main.py --phase=train --n_label=10
 ```
