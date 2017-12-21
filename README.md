@@ -10,7 +10,7 @@ The author's torch code can be found [here](https://github.com/yunjey/StarGAN)
 * Scipy
 
 ## Usage
-So far I'm only using celebA datasets <br>
+So far I'm only using celebA dataset <br>
 First, download dataset with:
 ```
 $ python download.py
