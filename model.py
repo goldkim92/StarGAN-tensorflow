@@ -184,7 +184,7 @@ class stargan(object):
         
     def test(self):
         # check if attribute available
-        if not len(self.binary_attrs) == len(self.n_label):
+        if not len(self.binary_attrs) == self.n_label:
             print ("binary_attr length is wrong! The length should be {}".format(self.n_label))
             return;
         
@@ -203,7 +203,7 @@ class stargan(object):
         
         # get batch images and labels
 #        self.attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male', 'Young','Mustache','Pale_Skin']
-        attrA, = [float(i) for i in list(self.binary_attrs)]
+        attrA = [float(i) for i in list(self.binary_attrs)] * len(testA_list)
         imgA, _ = preprocess_image(testA_list, testA_list, self.image_size)
         dataA, _ = preprocess_input(imgA, imgA, attrA, attrA, self.image_size, self.n_label)
                         
