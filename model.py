@@ -157,16 +157,21 @@ class stargan(object):
                 imgA, imgB = preprocess_image(dataA_list, dataB_list, self.image_size)
                 dataA, dataB = preprocess_input(imgA, imgB, attrA, attrB, self.image_size, self.n_label)
                 
-                # updatae G network
+                # generate fake_B
+                feed = { self.real_A: dataA }
+                fake_B = self.sess.run(self.fake_B, feed_dict = feed)
+                
+                # update D network for 5 times
+                for _ in range(5):
+                    epsilon = np.random.rand(self.batch_size,1,1,1)
+                    feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB), self.epsilon: epsilon }
+                    _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum], feed_dict = feed)
+
+                # updatae G network for 1 time
                 feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB) }
-                fake_B, _, g_loss, g_summary = self.sess.run([self.fake_B, self.g_optim, self.g_loss, self.g_sum],
+                _, g_loss, g_summary = self.sess.run([self.g_optim, self.g_loss, self.g_sum],
                                                              feed_dict = feed)
-                
-                # update D network
-                epsilon = np.random.rand(self.batch_size,1,1,1)
-                feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB), self.epsilon: epsilon }
-                _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum], feed_dict = feed)
-                
+                                
                 # summary
                 self.writer.add_summary(g_summary, count)
                 self.writer.add_summary(d_summary, count)

@@ -22,7 +22,7 @@ parser.add_argument('--sample_dir',     type=str,   default='sample') # in asset
 parser.add_argument('--test_dir',       type=str,   default='test') # in assets/ directory
 parser.add_argument('--epoch',          type=int,   default=20)
 parser.add_argument('--batch_size',     type=int,   default=16)
-parser.add_argument('--image_size',     type=int,   default=64)
+parser.add_argument('--image_size',     type=int,   default=128)
 parser.add_argument('--image_channel',  type=int,   default=3)
 parser.add_argument('--nf',             type=int,   default=64) # number of filters
 parser.add_argument('--n_label',        type=int,   default=7)
