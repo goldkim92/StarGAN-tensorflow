@@ -162,7 +162,7 @@ class stargan(object):
                 
                 # get batch images and labels
                 attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list, self.attr_keys)
-                imgA, imgB = preprocess_image(dataA_list, dataB_list, self.image_size)
+                imgA, imgB = preprocess_image(dataA_list, dataB_list, self.image_size, phase='train')
                 dataA, dataB = preprocess_input(imgA, imgB, attrA, attrB, self.image_size, self.n_label)
                 
                 # generate fake_B
@@ -218,7 +218,7 @@ class stargan(object):
         # get batch images and labels
 #        self.attr_keys = ['Black_Hair','Blond_Hair','Brown_Hair', 'Male', 'Young','Mustache','Pale_Skin']
         attrA = [float(i) for i in list(self.binary_attrs)] * len(testA_list)
-        imgA, _ = preprocess_image(testA_list, testA_list, self.image_size)
+        imgA, _ = preprocess_image(testA_list, testA_list, self.image_size, phase='test')
         dataA, _ = preprocess_input(imgA, imgA, attrA, attrA, self.image_size, self.n_label)
                         
         # generate fakeB
@@ -278,7 +278,7 @@ class stargan(object):
         
         # get batch images and labels
         attrA, attrB = preprocess_attr(self.attr_names, attrA_list, attrB_list, self.attr_keys)
-        imgA, imgB = preprocess_image(testA_list, testB_list, self.image_size)
+        imgA, imgB = preprocess_image(testA_list, testB_list, self.image_size, phase='test')
         dataA, dataB = preprocess_input(imgA, imgB, attrA, attrB, self.image_size, self.n_label)
                         
         # generate fakeB

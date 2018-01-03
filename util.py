@@ -51,11 +51,11 @@ def preprocess_attr(attr_names, attrA_list, attrB_list, attr_keys):
     return attrA, attrB
 
 
-def preprocess_image(dataA_list, dataB_list, image_size):
-    imgA = [get_image(img_path, image_size) for img_path in dataA_list]
+def preprocess_image(dataA_list, dataB_list, image_size, phase='train'):
+    imgA = [get_image(img_path, image_size, phase=phase) for img_path in dataA_list]
     imgA = np.array(imgA)
     
-    imgB = [get_image(img_path, image_size) for img_path in dataB_list]
+    imgB = [get_image(img_path, image_size, phase=phase) for img_path in dataB_list]
     imgB = np.array(imgB)
     return imgA, imgB
         
@@ -69,11 +69,14 @@ def preprocess_input(imgA, imgB, attrA, attrB, image_size, n_label):
     return dataA, dataB
 
 
-def get_image(img_path, data_size):
+def get_image(img_path, data_size, phase='train'):
     img = scm.imread(img_path)
     img_crop = img[15:203,9:169,:]
     img_resize = scm.imresize(img_crop,[data_size,data_size,3])
     img_resize = img_resize/127.5 - 1.
+    
+    if phase == 'train' and np.random.random() >= 0.5:
+        img_resize = np.flip(img_resize,1)
     
     return img_resize
 
