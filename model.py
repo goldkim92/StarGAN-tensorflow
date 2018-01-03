@@ -68,6 +68,7 @@ class stargan(object):
                                             name='fake_images_sample') # use when updating discriminator
         
         self.epsilon = tf.placeholder(tf.float32, [None,1,1,1], name='gp_random_num')
+        self.lr_decay = tf.placeholder(tf.float32, None, name='lr_decay')
         
         # generate image
         self.fake_B = generator(self.real_A, self.options, False, name='gen')
@@ -115,8 +116,8 @@ class stargan(object):
 #        for var in t_vars: print(var.name)
         
         # optimizer
-        self.d_optim = tf.train.AdamOptimizer(self.lr, beta1=self.beta1).minimize(self.d_loss, var_list=self.d_vars)
-        self.g_optim = tf.train.AdamOptimizer(self.lr, beta1=self.beta1).minimize(self.g_loss, var_list=self.g_vars)
+        self.d_optim = tf.train.AdamOptimizer(self.lr * self.lr_decay, beta1=self.beta1).minimize(self.d_loss, var_list=self.d_vars)
+        self.g_optim = tf.train.AdamOptimizer(self.lr * self.lr_decay, beta1=self.beta1).minimize(self.g_loss, var_list=self.g_vars)
         
     
     def train(self):
@@ -141,6 +142,13 @@ class stargan(object):
         count = 0
         #train
         for epoch in range(self.epoch):
+            # get lr_decay
+            if epoch < self.epoch / 2:
+                lr_decay = 1.0
+            else:
+                lr_decay = (self.epoch - epoch) / (self.epoch / 2)
+            
+            # data shuffle
             np.random.shuffle(dataA_files)
             np.random.shuffle(dataB_files)
             
@@ -164,11 +172,12 @@ class stargan(object):
                 # update D network for 5 times
                 for _ in range(5):
                     epsilon = np.random.rand(self.batch_size,1,1,1)
-                    feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB), self.epsilon: epsilon }
+                    feed = { self.fake_B_sample: fake_B, self.real_B: dataB, self.attr_B: np.array(attrB), 
+                            self.epsilon: epsilon, self.lr_decay: lr_decay }
                     _, d_loss, d_summary = self.sess.run([self.d_optim, self.d_loss, self.d_sum], feed_dict = feed)
 
                 # updatae G network for 1 time
-                feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB) }
+                feed = { self.real_A: dataA, self.real_B: dataB, self.attr_B: np.array(attrB), self.lr_decay: lr_decay }
                 _, g_loss, g_summary = self.sess.run([self.g_optim, self.g_loss, self.g_sum],
                                                              feed_dict = feed)
                                 
